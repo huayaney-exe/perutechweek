@@ -180,7 +180,50 @@ canvas.badge {
   margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+.msg {
+  display: flex;
+  flex-direction: column;
+}
+.msg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.msg-head label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.msg textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 96px;
+}
+.msg textarea:focus {
+  outline: none;
+  border-color: var(--red-bright);
+}
+button.link {
+  background: none;
+  border: none;
+  color: var(--red-coral);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
 }
 .row {
   display: flex;

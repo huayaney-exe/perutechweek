@@ -27,13 +27,23 @@ export function canShareFile(file) {
   )
 }
 
-export async function shareNative(blob, archetype) {
+// ¿El dispositivo puede compartir archivos por la hoja nativa? (móvil, sobre todo)
+export function canShareFiles() {
+  try {
+    const f = new File([new Blob(['x'])], 'x.png', { type: 'image/png' })
+    return !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [f] })
+  } catch {
+    return false
+  }
+}
+
+export async function shareNative(blob, archetype, text) {
   const file = new File([blob], `credencial-ptw-2026-${archetype}.png`, { type: 'image/png' })
   if (!canShareFile(file)) return false
   await navigator.share({
     files: [file],
     title: 'Perú Tech Week 2026',
-    text: caption(archetype),
+    text: text || caption(archetype),
   })
   return true
 }
@@ -41,9 +51,9 @@ export async function shareNative(blob, archetype) {
 // Fallbacks por canal (desktop / cuando no hay Web Share con archivos).
 // Ojo honesto: WhatsApp/LinkedIn/X NO pueden pre-adjuntar imagen vía URL —
 // el flujo real es Descargar PNG → abrir la app → adjuntar. El texto+link sí van.
-export function channelUrl(channel, archetype) {
+export function channelUrl(channel, archetype, customText) {
   const url = lumaUrl(archetype)
-  const text = caption(archetype)
+  const text = customText || caption(archetype)
   switch (channel) {
     case 'whatsapp':
       return `https://wa.me/?text=${encodeURIComponent(text)}`
@@ -67,9 +77,9 @@ export function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export async function copyCaption(archetype) {
+export async function copyText(text) {
   try {
-    await navigator.clipboard.writeText(caption(archetype))
+    await navigator.clipboard.writeText(text)
     return true
   } catch {
     return false

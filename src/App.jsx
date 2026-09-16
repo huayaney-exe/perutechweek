@@ -3,7 +3,7 @@ import { ARCHETYPES, ARCHETYPE_ORDER, FORMATS } from './config/templates.js'
 import { toDrawable } from './lib/image.js'
 import { removeBackgroundFromFile, bgRemovalLikelySupported } from './lib/removeBackground.js'
 import { renderBadge, canvasToBlob } from './lib/composite.js'
-import { shareNative, canShareFile, channelUrl, downloadBlob, copyCaption } from './lib/share.js'
+import { shareNative, canShareFile, canShareFiles, channelUrl, downloadBlob, copyText, caption } from './lib/share.js'
 import { initAnalytics, capture } from './lib/analytics.js'
 
 export default function App() {
@@ -16,10 +16,18 @@ export default function App() {
   const [processing, setProcessing] = useState(false)
   const [fontsReady, setFontsReady] = useState(false)
   const [toast, setToast] = useState('')
+  const [msg, setMsg] = useState(() => caption('asistente'))
+  const [msgEdited, setMsgEdited] = useState(false)
 
   const canvasRef = useRef(null)
   const generatedOnce = useRef(false)
   const skipRef = useRef(false)
+  const canNativeShare = useRef(canShareFiles()).current
+
+  // El mensaje sigue al arquetipo, salvo que el usuario lo haya editado a mano.
+  useEffect(() => {
+    if (!msgEdited) setMsg(caption(archetype))
+  }, [archetype, msgEdited])
 
   // Init analytics + esperar fuentes antes de dibujar (si no, el texto sale en fuente fallback).
   useEffect(() => {
@@ -118,26 +126,27 @@ export default function App() {
     const file = new File([blob], 'credencial.png', { type: 'image/png' })
     if (canShareFile(file)) {
       try {
-        await shareNative(blob, archetype)
+        await shareNative(blob, archetype, msg)
         capture('badge_shared', { channel: 'native', archetype, format })
       } catch {
         /* usuario canceló */
       }
     } else {
-      // Sin Web Share con archivos (desktop): descarga + abre canal.
+      // Sin Web Share con archivos (desktop): descarga + copia el mensaje.
       downloadBlob(blob, `credencial-ptw-2026-${archetype}.png`)
-      showToast('Descargué tu credencial. Adjúntala al publicar 👇')
+      await copyText(msg)
+      showToast('Descargué el PNG y copié el mensaje. Adjunta la imagen al publicar 👇')
     }
   }
 
   function onChannel(channel) {
     capture('share_clicked', { channel, format, archetype })
-    window.open(channelUrl(channel, archetype), '_blank', 'noopener')
+    window.open(channelUrl(channel, archetype, msg), '_blank', 'noopener')
   }
 
   async function onCopy() {
-    const ok = await copyCaption(archetype)
-    showToast(ok ? 'Texto copiado ✓' : 'No pude copiar')
+    const ok = await copyText(msg)
+    showToast(ok ? 'Mensaje copiado ✓' : 'No pude copiar')
   }
 
   return (
@@ -229,30 +238,43 @@ export default function App() {
           </div>
 
           <div className="actions">
+            <div className="msg">
+              <div className="msg-head">
+                <label htmlFor="msg">Mensaje para compartir</label>
+                <button className="link" onClick={onCopy}>Copiar</button>
+              </div>
+              <textarea
+                id="msg"
+                value={msg}
+                onChange={(e) => {
+                  setMsg(e.target.value)
+                  setMsgEdited(true)
+                }}
+                rows={4}
+              />
+            </div>
+
             <div className="row">
-              <button className="btn btn-primary" onClick={onShare}>
-                Compartir
-              </button>
-              <button className="btn btn-ghost" onClick={onDownload}>
+              {canNativeShare && (
+                <button className="btn btn-primary" onClick={onShare}>
+                  Compartir
+                </button>
+              )}
+              <button className={canNativeShare ? 'btn btn-ghost' : 'btn btn-primary'} onClick={onDownload}>
                 Descargar PNG
               </button>
             </div>
+
             <div className="channels">
-              <button className="btn btn-ghost" onClick={() => onChannel('whatsapp')}>
-                WhatsApp
-              </button>
-              <button className="btn btn-ghost" onClick={() => onChannel('linkedin')}>
-                LinkedIn
-              </button>
-              <button className="btn btn-ghost" onClick={() => onChannel('x')}>
-                X
-              </button>
-              <button className="btn btn-ghost" onClick={onCopy}>
-                Copiar texto
-              </button>
+              <button className="btn btn-ghost" onClick={() => onChannel('whatsapp')}>WhatsApp</button>
+              <button className="btn btn-ghost" onClick={() => onChannel('linkedin')}>LinkedIn</button>
+              <button className="btn btn-ghost" onClick={() => onChannel('x')}>X</button>
             </div>
+
             <div className="hint">
-              En LinkedIn e Instagram: primero <strong>descarga el PNG</strong>, luego adjúntalo al publicar. El link con tu invitación va en el texto.
+              {canNativeShare
+                ? 'Toca Compartir para publicar la imagen con el mensaje. En LinkedIn e Instagram: descarga el PNG y adjúntalo — el mensaje ya va copiado.'
+                : 'Flujo en 2 pasos: 1) Descarga el PNG. 2) Abre el canal (el mensaje ya va listo), pega y adjunta la imagen. LinkedIn e Instagram no pre-adjuntan imagen por link.'}
             </div>
           </div>
         </div>
