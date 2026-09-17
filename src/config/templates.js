@@ -1,38 +1,49 @@
-// Tokens de marca extraídos de techweek.pe (ver ../../DESIGN-SYSTEM.md).
+// Tokens del badge v2 "patrón andino" (fondo rojo). El chrome de la app sigue dark.
 export const COLORS = {
-  bg: '#0A0A0A',
-  surface: '#0F0D0D',
-  surface2: '#161414',
-  border: '#2A2A2A',
-  text: '#E4E4E4',
-  textStrong: '#FFFFFF',
-  textMuted: '#B9B9B9',
-  textDim: '#7A7A7A',
-  red: '#DD1C29', // canónico (wordmark, marcas estáticas)
-  redBright: '#FF3344', // CTA / interactivo / energía
-  redCoral: '#FF6C76',
-  redTint: 'rgba(221,28,41,0.14)',
+  white: '#FFFFFF',
+  panel: '#E4E4E4', // marco de foto (claro)
+  panelIcon: '#B7B7B7', // icono/placeholder "FOTO"
+  ink: '#000000', // barra negra Cargo · Empresa
+  maroon: '#6E1315', // tab "Soy X" + acentos oscuros del patrón
+  redField: '#E4162A', // rojo de fondo (fallback si no carga el patrón)
 }
 
 export const FONT = 'Manrope, system-ui, -apple-system, "Segoe UI", Arial, sans-serif'
 
 export const EVENT = {
-  dateLine: '12–18 OCTUBRE · LIMA',
-  tagline: 'Innovación, Tecnología y Startups',
-  url: 'techweek.pe',
+  defaultName: 'Perú Tech Week 2026',
+  defaultDate: '12–18 OCT · Lima',
 }
 
-// Arquetipos de credencial. Cada uno cambia el kicker y el acento.
-export const ARCHETYPES = {
-  asistente: { key: 'asistente', label: 'ASISTENTE', kicker: 'ESTARÉ EN' },
-  embajador: { key: 'embajador', label: 'EMBAJADOR OFICIAL', kicker: 'SOY EMBAJADOR DE' },
-  speaker: { key: 'speaker', label: 'SPEAKER', kicker: 'SERÉ SPEAKER EN' },
+// Tipos parametrizables por URL: /attendee, /host, /speaker, /sponsor, /ambassador
+// (alias: /aliado → sponsor, /asistente → attendee, /embajador → ambassador).
+export const TYPES = {
+  attendee: { key: 'attendee', tab: 'Soy Asistente', showEvent: false, showAlly: false },
+  host: { key: 'host', tab: 'Soy Host', showEvent: true, showAlly: true },
+  speaker: { key: 'speaker', tab: 'Soy Speaker', showEvent: true, showAlly: false },
+  sponsor: { key: 'sponsor', tab: 'Soy Aliado', showEvent: false, showAlly: false },
+  ambassador: { key: 'ambassador', tab: 'Soy Embajador', showEvent: false, showAlly: false },
+}
+export const TYPE_ORDER = ['attendee', 'host', 'speaker', 'sponsor', 'ambassador']
+
+export const TYPE_ALIASES = {
+  asistente: 'attendee',
+  aliado: 'sponsor',
+  embajador: 'ambassador',
 }
 
-export const ARCHETYPE_ORDER = ['asistente', 'embajador', 'speaker']
+// Lee el tipo desde el path (/host) o ?type=host. Default: attendee.
+export function typeFromUrl() {
+  if (typeof window === 'undefined') return 'attendee'
+  const q = new URLSearchParams(window.location.search).get('type')
+  const seg = window.location.pathname.split('/').filter(Boolean)[0]
+  const raw = (q || seg || '').toLowerCase()
+  const norm = TYPE_ALIASES[raw] || raw
+  return TYPES[norm] ? norm : 'attendee'
+}
 
 // Formatos de salida (px reales de exportación).
 export const FORMATS = {
+  post: { key: 'post', label: 'Post 4:5', w: 1080, h: 1350 },
   story: { key: 'story', label: 'Story 9:16', w: 1080, h: 1920 },
-  square: { key: 'square', label: 'Post 1:1', w: 1080, h: 1080 },
 }

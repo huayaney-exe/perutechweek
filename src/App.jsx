@@ -1,122 +1,141 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ARCHETYPES, ARCHETYPE_ORDER, FORMATS } from './config/templates.js'
+import { TYPES, TYPE_ORDER, FORMATS, typeFromUrl } from './config/templates.js'
 import { toDrawable } from './lib/image.js'
 import { removeBackgroundFromFile, bgRemovalLikelySupported } from './lib/removeBackground.js'
 import { renderBadge, canvasToBlob } from './lib/composite.js'
 import { shareNative, canShareFile, canShareFiles, channelUrl, downloadBlob, copyText, caption } from './lib/share.js'
 import { initAnalytics, capture } from './lib/analytics.js'
+import patternUrl from './assets/pattern.jpg'
 
 export default function App() {
+  const initialType = typeFromUrl()
+  const [type, setType] = useState(initialType)
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
-  const [archetype, setArchetype] = useState('asistente')
-  const [format, setFormat] = useState('story')
-  const [portrait, setPortrait] = useState(null)
-  const [method, setMethod] = useState('none') // none | mask | cutout
+  const [ally, setAlly] = useState('')
+  const [eventName, setEventName] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [format, setFormat] = useState('post')
+
+  const [baseImg, setBaseImg] = useState(null)
+  const [cutoutImg, setCutoutImg] = useState(null)
+  const [removeBg, setRemoveBg] = useState(false)
   const [processing, setProcessing] = useState(false)
+
+  const [patternImg, setPatternImg] = useState(null)
   const [fontsReady, setFontsReady] = useState(false)
   const [toast, setToast] = useState('')
-  const [msg, setMsg] = useState(() => caption('asistente'))
+  const [msg, setMsg] = useState(() => caption(initialType))
   const [msgEdited, setMsgEdited] = useState(false)
 
   const canvasRef = useRef(null)
   const generatedOnce = useRef(false)
-  const skipRef = useRef(false)
+  const baseFile = useRef(null)
   const canNativeShare = useRef(canShareFiles()).current
 
-  // El mensaje sigue al arquetipo, salvo que el usuario lo haya editado a mano.
-  useEffect(() => {
-    if (!msgEdited) setMsg(caption(archetype))
-  }, [archetype, msgEdited])
+  const t = TYPES[type] || TYPES.attendee
+  const portrait = removeBg ? cutoutImg || baseImg : baseImg
 
-  // Init analytics + esperar fuentes antes de dibujar (si no, el texto sale en fuente fallback).
+  // Cargar patrón de fondo + fuentes + analytics.
   useEffect(() => {
     initAnalytics()
-    let alive = true
+    const img = new Image()
+    img.onload = () => setPatternImg(img)
+    img.src = patternUrl
     const weights = ['500 100px Manrope', '600 100px Manrope', '700 100px Manrope', '800 100px Manrope']
     Promise.all(weights.map((w) => document.fonts.load(w)))
       .catch(() => {})
-      .finally(() => document.fonts.ready.then(() => alive && setFontsReady(true)))
-    return () => {
-      alive = false
-    }
+      .finally(() => document.fonts.ready.then(() => setFontsReady(true)))
   }, [])
 
-  const showToast = useCallback((msg) => {
-    setToast(msg)
+  // El mensaje sigue al tipo salvo edición manual.
+  useEffect(() => {
+    if (!msgEdited) setMsg(caption(type))
+  }, [type, msgEdited])
+
+  const showToast = useCallback((m) => {
+    setToast(m)
     setTimeout(() => setToast(''), 2200)
   }, [])
 
-  // Re-render del badge ante cualquier cambio relevante.
+  // Re-render del badge ante cualquier cambio.
   useEffect(() => {
     if (!canvasRef.current) return
-    renderBadge(canvasRef.current, { name, role, archetype, format, portrait })
-    if (fontsReady && !generatedOnce.current && (portrait || name.trim())) {
+    renderBadge(canvasRef.current, {
+      type,
+      format,
+      name,
+      role,
+      ally,
+      eventName,
+      eventDate,
+      portrait,
+      patternImg,
+    })
+    if (fontsReady && patternImg && !generatedOnce.current && (portrait || name.trim())) {
       generatedOnce.current = true
-      capture('badge_generated', {
-        archetype,
-        format,
-        has_photo: !!portrait,
-        portrait_method: method,
-      })
+      capture('badge_generated', { type, format, has_photo: !!portrait })
     }
-  }, [name, role, archetype, format, portrait, method, fontsReady])
+  }, [type, format, name, role, ally, eventName, eventDate, portrait, patternImg, fontsReady])
+
+  // Ejecutar bg-removal cuando se activa el toggle (worker, no bloquea la UI).
+  useEffect(() => {
+    let cancelled = false
+    async function run() {
+      if (!removeBg || !baseFile.current || cutoutImg || processing) return
+      if (!bgRemovalLikelySupported()) {
+        showToast('Tu equipo no soporta quitar el fondo aquí')
+        setRemoveBg(false)
+        return
+      }
+      setProcessing(true)
+      const t0 = performance.now()
+      capture('bgremoval_started', { engine: 'imgly' })
+      try {
+        const blob = await removeBackgroundFromFile(baseFile.current, { timeoutMs: 30000 })
+        if (cancelled) return
+        const cut = await toDrawable(blob, 1200)
+        setCutoutImg(cut.canvas)
+        capture('bgremoval_succeeded', { ms: Math.round(performance.now() - t0) })
+      } catch (err) {
+        if (cancelled) return
+        capture('bgremoval_fallback_used', { cause: err && err.message === 'timeout' ? 'timeout' : 'failed' })
+        setRemoveBg(false)
+        showToast('No pude quitar el fondo — uso la foto original')
+      } finally {
+        if (!cancelled) setProcessing(false)
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [removeBg]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onFile(e) {
     const file = e.target.files && e.target.files[0]
     if (!file) return
     capture('photo_uploaded', { mime: file.type, bytes: file.size })
-    skipRef.current = false
-    setProcessing(true)
-    setMethod('mask')
+    baseFile.current = file
+    setCutoutImg(null)
     try {
-      const base = await toDrawable(file, 1024)
-      setPortrait(base.canvas) // baseline inmediato (máscara circular)
+      const base = await toDrawable(file, 1200)
+      setBaseImg(base.canvas)
     } catch {
-      setProcessing(false)
       showToast('No pude leer esa imagen. Prueba otra.')
-      return
     }
-
-    // Mejora progresiva: remover fondo (no bloqueante, con fallback).
-    if (!bgRemovalLikelySupported()) {
-      capture('bgremoval_fallback_used', { cause: 'unsupported' })
-      setProcessing(false)
-      return
-    }
-    const t0 = performance.now()
-    capture('bgremoval_started', { engine: 'imgly' })
-    try {
-      const blob = await removeBackgroundFromFile(file, { timeoutMs: 30000 })
-      if (skipRef.current) return // el usuario decidió usar la foto así
-      const cut = await toDrawable(blob, 1024)
-      setPortrait(cut.canvas)
-      setMethod('cutout')
-      capture('bgremoval_succeeded', { ms: Math.round(performance.now() - t0) })
-    } catch (err) {
-      const cause = err && err.message === 'timeout' ? 'timeout' : 'failed'
-      capture('bgremoval_fallback_used', { cause, ms: Math.round(performance.now() - t0) })
-    } finally {
-      setProcessing(false)
-    }
-  }
-
-  function skipBgRemoval() {
-    skipRef.current = true
-    setProcessing(false)
-    capture('bgremoval_fallback_used', { cause: 'skipped' })
   }
 
   async function currentBlob() {
-    renderBadge(canvasRef.current, { name, role, archetype, format, portrait })
+    renderBadge(canvasRef.current, { type, format, name, role, ally, eventName, eventDate, portrait, patternImg })
     return canvasToBlob(canvasRef.current)
   }
 
   async function onDownload() {
     const blob = await currentBlob()
     if (!blob) return
-    downloadBlob(blob, `credencial-ptw-2026-${archetype}-${format}.png`)
-    capture('download_clicked', { format, archetype })
+    downloadBlob(blob, `credencial-ptw-2026-${type}-${format}.png`)
+    capture('download_clicked', { format, type })
     showToast('Credencial descargada ✓')
   }
 
@@ -126,22 +145,21 @@ export default function App() {
     const file = new File([blob], 'credencial.png', { type: 'image/png' })
     if (canShareFile(file)) {
       try {
-        await shareNative(blob, archetype, msg)
-        capture('badge_shared', { channel: 'native', archetype, format })
+        await shareNative(blob, type, msg)
+        capture('badge_shared', { channel: 'native', type, format })
       } catch {
-        /* usuario canceló */
+        /* cancelado */
       }
     } else {
-      // Sin Web Share con archivos (desktop): descarga + copia el mensaje.
-      downloadBlob(blob, `credencial-ptw-2026-${archetype}.png`)
+      downloadBlob(blob, `credencial-ptw-2026-${type}.png`)
       await copyText(msg)
       showToast('Descargué el PNG y copié el mensaje. Adjunta la imagen al publicar 👇')
     }
   }
 
   function onChannel(channel) {
-    capture('share_clicked', { channel, format, archetype })
-    window.open(channelUrl(channel, archetype, msg), '_blank', 'noopener')
+    capture('share_clicked', { channel, format, type })
+    window.open(channelUrl(channel, type, msg), '_blank', 'noopener')
   }
 
   async function onCopy() {
@@ -156,12 +174,22 @@ export default function App() {
           PERÚ TECH WEEK <span className="yr">2026</span>
         </div>
         <h1>Genera tu credencial</h1>
-        <p>Sube tu foto, arma tu badge y comparte que estarás en la semana tech más grande del Perú.</p>
+        <p>Sube tu foto, arma tu credencial y comparte que estarás en la semana tech más grande del Perú.</p>
       </header>
 
       <div className="grid">
-        {/* Controles */}
         <div className="panel">
+          <div className="field">
+            <label>Tipo de credencial</label>
+            <div className="seg">
+              {TYPE_ORDER.map((k) => (
+                <button key={k} className={type === k ? 'active' : ''} onClick={() => setType(k)}>
+                  {TYPES[k].tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="field">
             <label>Tu foto</label>
             <label className="uploader">
@@ -169,55 +197,43 @@ export default function App() {
               <div>Se procesa en tu dispositivo — no se sube a ningún servidor.</div>
               <input type="file" accept="image/*" onChange={onFile} />
             </label>
-            {processing && (
-              <div className="status">
-                Quitando el fondo… (la primera vez baja el modelo, puede tomar unos segundos){' '}
-                <button
-                  onClick={skipBgRemoval}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--red-coral)',
-                    cursor: 'pointer',
-                    font: 'inherit',
-                    textDecoration: 'underline',
-                    padding: 0,
-                  }}
-                >
-                  usar mi foto así
-                </button>
-              </div>
+            {baseImg && (
+              <label className="check">
+                <input type="checkbox" checked={removeBg} onChange={(e) => setRemoveBg(e.target.checked)} disabled={processing} />
+                Quitar el fondo de la foto {processing && '· procesando…'}
+              </label>
             )}
-            {!processing && method === 'cutout' && <div className="status ok">Fondo removido ✓</div>}
-            {!processing && method === 'mask' && <div className="status">Foto en marco circular</div>}
           </div>
 
           <div className="field">
-            <label>Nombre</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" maxLength={40} />
+            <label>Nombre completo</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre Completo" maxLength={40} />
           </div>
 
           <div className="field">
-            <label>Rol / Empresa</label>
-            <input
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="Founder @ tu startup"
-              maxLength={48}
-            />
+            <label>Cargo · Empresa</label>
+            <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Founder · Prisma" maxLength={48} />
           </div>
 
-          <div className="field">
-            <label>Tipo de credencial</label>
-            <div className="seg">
-              {ARCHETYPE_ORDER.map((k) => (
-                <button key={k} className={archetype === k ? 'active' : ''} onClick={() => setArchetype(k)}>
-                  {ARCHETYPES[k].label}
-                </button>
-              ))}
+          {t.showAlly && (
+            <div className="field">
+              <label>Presenta (aliado)</label>
+              <input type="text" value={ally} onChange={(e) => setAlly(e.target.value)} placeholder="Nombre del aliado" maxLength={30} />
             </div>
-          </div>
+          )}
+
+          {t.showEvent && (
+            <>
+              <div className="field">
+                <label>Nombre del evento</label>
+                <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Nombre del evento" maxLength={40} />
+              </div>
+              <div className="field">
+                <label>Fecha del evento</label>
+                <input type="text" value={eventDate} onChange={(e) => setEventDate(e.target.value)} placeholder="Lunes 13, Octubre" maxLength={28} />
+              </div>
+            </>
+          )}
 
           <div className="field">
             <label>Formato</label>
@@ -231,7 +247,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Preview + acciones */}
         <div className="preview-col">
           <div className="canvas-frame">
             <canvas ref={canvasRef} className="badge" />
@@ -256,9 +271,7 @@ export default function App() {
 
             <div className="row">
               {canNativeShare && (
-                <button className="btn btn-primary" onClick={onShare}>
-                  Compartir
-                </button>
+                <button className="btn btn-primary" onClick={onShare}>Compartir</button>
               )}
               <button className={canNativeShare ? 'btn btn-ghost' : 'btn btn-primary'} onClick={onDownload}>
                 Descargar PNG
@@ -274,7 +287,7 @@ export default function App() {
             <div className="hint">
               {canNativeShare
                 ? 'Toca Compartir para publicar la imagen con el mensaje. En LinkedIn e Instagram: descarga el PNG y adjúntalo — el mensaje ya va copiado.'
-                : 'Flujo en 2 pasos: 1) Descarga el PNG. 2) Abre el canal (el mensaje ya va listo), pega y adjunta la imagen. LinkedIn e Instagram no pre-adjuntan imagen por link.'}
+                : 'Flujo en 2 pasos: 1) Descarga el PNG. 2) Abre el canal (el mensaje ya va listo), pega y adjunta la imagen.'}
             </div>
           </div>
         </div>
