@@ -1,4 +1,4 @@
-// Copy de compartir en español, por tipo. {url} se reemplaza con el link UTM a Luma.
+// Copy de compartir en español, por tipo. {url} se reemplaza con el link a Luma.
 export const SHARE_COPY = {
   attendee: `🚀 Estaré en Perú Tech Week 2026 (12–18 oct) — la semana de innovación, tecnología y startups más grande del Perú. Nos vemos ahí 👉 {url}`,
   host: `🎤 Voy a hostear un evento en Perú Tech Week 2026 (12–18 oct, Lima). Súmate 👉 {url}`,
