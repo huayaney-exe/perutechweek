@@ -188,14 +188,29 @@ export default function App() {
   }
 
   return (
-    <div className="wrap">
-      <header className="head">
-        <div className="wordmark">
-          PERÚ TECH WEEK <span className="yr">2026</span>
+    <>
+      <nav className="nav">
+        <div className="nav-inner">
+          <div className="wordmark nav-mark">
+            PERÚ TECH WEEK <span className="yr">2026</span>
+          </div>
+          <a
+            className="nav-cta"
+            href="https://luma.com/Perutechweek2026?utm_source=credencial&utm_medium=nav&utm_campaign=ptw2026"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Agenda <span className="sm-hide">completa</span>
+            <span className="arrow" aria-hidden="true">→</span>
+          </a>
         </div>
-        <h1>Genera tu credencial</h1>
-        <p>Sube tu foto, arma tu credencial y comparte que estarás en la semana tech más grande del Perú.</p>
-      </header>
+      </nav>
+
+      <div className="wrap">
+        <header className="head">
+          <h1>Genera tu credencial</h1>
+          <p>Sube tu foto, arma tu credencial y comparte que estarás en la semana tech más grande del Perú.</p>
+        </header>
 
       <div className="grid">
         <div className="panel">
@@ -320,7 +335,8 @@ export default function App() {
         </div>
       </div>
 
-      {toast && <div className="toast">{toast}</div>}
-    </div>
+        {toast && <div className="toast">{toast}</div>}
+      </div>
+    </>
   )
 }
