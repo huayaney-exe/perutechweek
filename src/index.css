@@ -1,8 +1,5 @@
 :root {
   --bg: #0a0a0a;
-  --surface: #0f0d0d;
-  --surface2: #161414;
-  --border: #2a2a2a;
   --text: #e4e4e4;
   --text-strong: #ffffff;
   --text-muted: #b9b9b9;
@@ -10,6 +7,15 @@
   --red: #dd1c29;
   --red-bright: #ff3344;
   --red-coral: #ff6c76;
+
+  /* Frosted glass */
+  --glass: rgba(255, 255, 255, 0.045);
+  --glass-hover: rgba(255, 255, 255, 0.075);
+  --glass-brd: rgba(255, 255, 255, 0.1);
+  --glass-brd-strong: rgba(255, 255, 255, 0.18);
+  --hi: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
   font-family: Manrope, system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 }
 
@@ -20,15 +26,33 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+/* Ambient glows dan profundidad para que el frosted glass tenga qué difuminar */
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(55% 45% at 12% -6%, rgba(221, 28, 41, 0.13), transparent 72%),
+    radial-gradient(46% 42% at 110% 18%, rgba(255, 51, 68, 0.09), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+/* Grain sutil (film) sobre toda la UI — no afecta el PNG exportado del badge */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
   min-height: 100vh;
 }
-
 .wrap {
   max-width: 1120px;
   margin: 0 auto;
@@ -72,11 +96,15 @@ body {
   }
 }
 
+/* Panel: frosted glass */
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
   border-radius: 20px;
   padding: 22px;
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  box-shadow: var(--hi), 0 24px 60px rgba(0, 0, 0, 0.4);
 }
 
 .field {
@@ -90,21 +118,53 @@ body {
   color: var(--text-dim);
   margin-bottom: 7px;
 }
-.field input[type='text'] {
+
+/* Inputs / textarea: glass translúcido con hover y foco sutiles */
+.field input[type='text'],
+.msg textarea {
   width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
   color: var(--text-strong);
   border-radius: 12px;
-  padding: 13px 14px;
   font-size: 16px;
   font-family: inherit;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--hi);
+  transition:
+    border-color 0.18s var(--ease),
+    background 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
 }
-.field input:focus {
+.field input[type='text'] {
+  padding: 13px 14px;
+}
+.msg textarea {
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 96px;
+  color: var(--text);
+}
+.field input[type='text']:hover,
+.msg textarea:hover {
+  background: var(--glass-hover);
+  border-color: var(--glass-brd-strong);
+}
+.field input[type='text']:focus,
+.msg textarea:focus {
   outline: none;
+  background: rgba(255, 255, 255, 0.06);
   border-color: var(--red-bright);
+  box-shadow: var(--hi), 0 0 0 3px rgba(255, 51, 68, 0.18);
+}
+::placeholder {
+  color: var(--text-dim);
 }
 
+/* Segmentos (tipo/formato): glass con lift en hover, glow en activo */
 .seg {
   display: flex;
   gap: 8px;
@@ -113,8 +173,8 @@ body {
 .seg button {
   flex: 1;
   min-width: 90px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
   color: var(--text-muted);
   border-radius: 999px;
   padding: 11px 12px;
@@ -122,26 +182,54 @@ body {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.12s;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    color 0.18s var(--ease),
+    transform 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.seg button:hover {
+  background: var(--glass-hover);
+  border-color: var(--glass-brd-strong);
+  color: var(--text-strong);
+  transform: translateY(-1px);
+}
+.seg button:active {
+  transform: translateY(0);
 }
 .seg button.active {
   background: var(--red-bright);
-  border-color: var(--red-bright);
+  border-color: transparent;
   color: #fff;
+  box-shadow: 0 6px 18px rgba(255, 51, 68, 0.3);
+}
+.seg button.active:hover {
+  transform: translateY(-1px);
+  background: var(--red-bright);
 }
 
+/* Uploader: glass punteado */
 .uploader {
-  border: 1.5px dashed var(--border);
+  border: 1.5px dashed var(--glass-brd-strong);
   border-radius: 14px;
   padding: 18px;
   text-align: center;
   color: var(--text-dim);
   cursor: pointer;
   font-size: 14px;
-  transition: border-color 0.12s;
+  background: var(--glass);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    border-color 0.18s var(--ease),
+    background 0.18s var(--ease);
 }
 .uploader:hover {
   border-color: var(--red-coral);
+  background: var(--glass-hover);
 }
 .uploader strong {
   color: var(--text);
@@ -192,9 +280,9 @@ body {
   justify-content: center;
   gap: 14px;
   border-radius: 16px;
-  background: rgba(10, 10, 10, 0.62);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .spinner {
   width: 46px;
@@ -248,23 +336,6 @@ canvas.badge {
   letter-spacing: 0.08em;
   color: var(--text-dim);
 }
-.msg textarea {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 14px;
-  font-family: inherit;
-  line-height: 1.5;
-  resize: vertical;
-  min-height: 96px;
-}
-.msg textarea:focus {
-  outline: none;
-  border-color: var(--red-bright);
-}
 button.link {
   background: none;
   border: none;
@@ -274,7 +345,12 @@ button.link {
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  transition: color 0.15s var(--ease);
 }
+button.link:hover {
+  color: var(--red-bright);
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -283,7 +359,7 @@ button.link {
 .btn {
   flex: 1;
   min-width: 120px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 15px 16px;
   font-size: 15px;
@@ -294,21 +370,36 @@ button.link {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    transform 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    filter 0.18s var(--ease);
+}
+.btn:active {
+  transform: translateY(0);
 }
 .btn-primary {
   background: var(--red-bright);
   color: #fff;
 }
 .btn-primary:hover {
-  background: var(--red);
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(255, 51, 68, 0.34);
 }
 .btn-ghost {
-  background: var(--surface2);
+  background: var(--glass);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-brd);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .btn-ghost:hover {
-  border-color: var(--text-dim);
+  background: var(--glass-hover);
+  border-color: var(--glass-brd-strong);
+  transform: translateY(-1px);
 }
 .channels {
   display: flex;
@@ -332,11 +423,24 @@ button.link {
   left: 50%;
   bottom: 24px;
   transform: translateX(-50%);
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: rgba(22, 20, 20, 0.72);
+  border: 1px solid var(--glass-brd);
   color: var(--text-strong);
   padding: 12px 18px;
   border-radius: 999px;
   font-size: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+  .btn:hover,
+  .seg button:hover,
+  .btn-ghost:hover {
+    transform: none;
+  }
 }
