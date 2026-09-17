@@ -33,11 +33,16 @@ function withTimeout(promise, ms, onTimeout) {
 
 // Devuelve un Blob PNG con fondo removido, o lanza. El caller decide el fallback.
 // La inferencia corre en un worker: el hilo principal queda libre para la UI.
-export async function removeBackgroundFromFile(file, { timeoutMs = 30000 } = {}) {
+// onProgress({ key, current, total }) alimenta el loading state.
+export async function removeBackgroundFromFile(file, { timeoutMs = 60000, onProgress } = {}) {
   const worker = new Worker(new URL('./bgWorker.js', import.meta.url), { type: 'module' })
   const run = new Promise((resolve, reject) => {
     worker.onmessage = (e) => {
       const d = e.data || {}
+      if (d.type === 'progress') {
+        if (onProgress) onProgress(d)
+        return
+      }
       if (d.ok && d.blob instanceof Blob) resolve(d.blob)
       else reject(new Error(d.error || 'salida inesperada'))
     }

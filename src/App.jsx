@@ -7,6 +7,15 @@ import { shareNative, canShareFile, canShareFiles, channelUrl, downloadBlob, cop
 import { initAnalytics, capture } from './lib/analytics.js'
 import patternUrl from './assets/pattern.jpg'
 
+// Traduce el progreso de imgly a un mensaje en español.
+function labelFor(d) {
+  const key = String((d && d.key) || '')
+  const pct = d && d.total ? Math.round((d.current / d.total) * 100) : null
+  if (key.startsWith('fetch')) return `Descargando modelo${pct != null ? ` ${pct}%` : '…'}`
+  if (key.startsWith('compute') || key.startsWith('inference')) return 'Removiendo fondo…'
+  return 'Removiendo fondo…'
+}
+
 export default function App() {
   const initialType = typeFromUrl()
   const [type, setType] = useState(initialType)
@@ -21,6 +30,7 @@ export default function App() {
   const [cutoutImg, setCutoutImg] = useState(null)
   const [removeBg, setRemoveBg] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [progress, setProgress] = useState('')
 
   const [patternImg, setPatternImg] = useState(null)
   const [fontsReady, setFontsReady] = useState(false)
@@ -89,11 +99,18 @@ export default function App() {
         return
       }
       setProcessing(true)
+      setProgress('Cargando modelo…')
       const t0 = performance.now()
       capture('bgremoval_started', { engine: 'imgly' })
       try {
-        const blob = await removeBackgroundFromFile(baseFile.current, { timeoutMs: 30000 })
+        const blob = await removeBackgroundFromFile(baseFile.current, {
+          timeoutMs: 60000,
+          onProgress: (d) => {
+            if (!cancelled) setProgress(labelFor(d))
+          },
+        })
         if (cancelled) return
+        setProgress('Afinando bordes…')
         const cut = await toDrawable(blob, 1200)
         setCutoutImg(cut.canvas)
         capture('bgremoval_succeeded', { ms: Math.round(performance.now() - t0) })
@@ -103,7 +120,10 @@ export default function App() {
         setRemoveBg(false)
         showToast('No pude quitar el fondo — uso la foto original')
       } finally {
-        if (!cancelled) setProcessing(false)
+        if (!cancelled) {
+          setProcessing(false)
+          setProgress('')
+        }
       }
     }
     run()
@@ -250,6 +270,13 @@ export default function App() {
         <div className="preview-col">
           <div className="canvas-frame">
             <canvas ref={canvasRef} className="badge" />
+            {processing && (
+              <div className="loading">
+                <div className="spinner" />
+                <div className="lt">{progress || 'Removiendo fondo…'}</div>
+                <div className="ls">Espera un momento — no cierres esto</div>
+              </div>
+            )}
           </div>
 
           <div className="actions">
