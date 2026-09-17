@@ -17,12 +17,14 @@ export const EVENT = {
 
 // Tipos parametrizables por URL: /attendee, /host, /speaker, /sponsor, /ambassador
 // (alias: /aliado → sponsor, /asistente → attendee, /embajador → ambassador).
+// Route-only: /organizador (alias /comite) → committee. No aparece en el selector.
 export const TYPES = {
   attendee: { key: 'attendee', tab: 'Soy Asistente', showEvent: false, showAlly: false },
   host: { key: 'host', tab: 'Soy Host', showEvent: true, showAlly: true },
   speaker: { key: 'speaker', tab: 'Soy Speaker', showEvent: true, showAlly: false },
   sponsor: { key: 'sponsor', tab: 'Soy Aliado', showEvent: false, showAlly: false },
   ambassador: { key: 'ambassador', tab: 'Soy Embajador', showEvent: false, showAlly: false },
+  committee: { key: 'committee', tab: 'Comité Organizador', showEvent: false, showAlly: false },
 }
 export const TYPE_ORDER = ['attendee', 'host', 'speaker', 'sponsor', 'ambassador']
 
@@ -30,6 +32,8 @@ export const TYPE_ALIASES = {
   asistente: 'attendee',
   aliado: 'sponsor',
   embajador: 'ambassador',
+  organizador: 'committee',
+  comite: 'committee',
 }
 
 // Lee el tipo desde el path (/host) o ?type=host. Default: attendee.

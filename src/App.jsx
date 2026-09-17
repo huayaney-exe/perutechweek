@@ -214,16 +214,18 @@ export default function App() {
 
       <div className="grid">
         <div className="panel">
-          <div className="field">
-            <label>Tipo de credencial</label>
-            <div className="seg">
-              {TYPE_ORDER.map((k) => (
-                <button key={k} className={type === k ? 'active' : ''} onClick={() => setType(k)}>
-                  {TYPES[k].tab}
-                </button>
-              ))}
+          {TYPE_ORDER.includes(type) && (
+            <div className="field">
+              <label>Tipo de credencial</label>
+              <div className="seg">
+                {TYPE_ORDER.map((k) => (
+                  <button key={k} className={type === k ? 'active' : ''} onClick={() => setType(k)}>
+                    {TYPES[k].tab}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="field">
             <label>Tu foto</label>

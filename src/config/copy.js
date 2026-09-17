@@ -5,6 +5,7 @@ export const SHARE_COPY = {
   speaker: `🎤 Seré speaker en Perú Tech Week 2026 (12–18 oct, Lima). Súmate a la semana tech más grande del Perú 👉 {url}`,
   sponsor: `🤝 Somos aliados de Perú Tech Week 2026 (12–18 oct, Lima). Nos vemos ahí 👉 {url}`,
   ambassador: `🎟️ Soy Embajador oficial de Perú Tech Week 2026. Del 12 al 18 de octubre en Lima. Regístrate gratis 👉 {url}`,
+  committee: `🛠️ Organizo Perú Tech Week 2026 (12–18 oct, Lima). Nos vemos ahí 👉 {url}`,
 }
 
 export function buildCaption(type, url) {
