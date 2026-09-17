@@ -29,24 +29,24 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-/* Ambient glows dan profundidad para que el frosted glass tenga qué difuminar */
+/* Ambient glows dan profundidad para que el frosted glass tenga qué difuminar.
+   Sin background-attachment: fixed (evita repintar el fondo en cada scroll). */
 body {
   min-height: 100vh;
   background:
     radial-gradient(55% 45% at 12% -6%, rgba(221, 28, 41, 0.13), transparent 72%),
     radial-gradient(46% 42% at 110% 18%, rgba(255, 51, 68, 0.09), transparent 70%),
     var(--bg);
-  background-attachment: fixed;
 }
-/* Grain sutil (film) sobre toda la UI — no afecta el PNG exportado del badge */
+/* Grain sutil (film). Fijo pero SIN mix-blend-mode (el blend forzaba recomposición
+   de toda la página en cada frame de scroll → jank). Compuesto una vez en GPU. */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -190,8 +190,6 @@ body::after {
   border-radius: 12px;
   font-size: 16px;
   font-family: inherit;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   box-shadow: var(--hi);
   transition:
     border-color 0.18s var(--ease),
@@ -243,8 +241,6 @@ body::after {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   transition:
     background 0.18s var(--ease),
     border-color 0.18s var(--ease),
@@ -282,8 +278,6 @@ body::after {
   cursor: pointer;
   font-size: 14px;
   background: var(--glass);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   transition:
     border-color 0.18s var(--ease),
     background 0.18s var(--ease);
@@ -454,8 +448,6 @@ button.link:hover {
   background: var(--glass);
   color: var(--text);
   border: 1px solid var(--glass-brd);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 .btn-ghost:hover {
   background: var(--glass-hover);
