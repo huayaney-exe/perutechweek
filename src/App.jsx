@@ -6,6 +6,8 @@ import { renderBadge, canvasToBlob } from './lib/composite.js'
 import { shareNative, canShareFile, canShareFiles, channelUrl, downloadBlob, copyText, caption } from './lib/share.js'
 import { initAnalytics, capture } from './lib/analytics.js'
 import patternUrl from './assets/pattern.jpg'
+import framePostUrl from './assets/frame-post.jpg'
+import frameStoryUrl from './assets/frame-story.jpg'
 
 // Traduce el progreso de imgly a un mensaje en español.
 function labelFor(d) {
@@ -33,6 +35,7 @@ export default function App() {
   const [progress, setProgress] = useState('')
 
   const [patternImg, setPatternImg] = useState(null)
+  const [frames, setFrames] = useState({ post: null, story: null })
   const [fontsReady, setFontsReady] = useState(false)
   const [toast, setToast] = useState('')
   const [msg, setMsg] = useState(() => caption(initialType))
@@ -52,6 +55,12 @@ export default function App() {
     const img = new Image()
     img.onload = () => setPatternImg(img)
     img.src = patternUrl
+    const fp = new Image()
+    fp.onload = () => setFrames((s) => ({ ...s, post: fp }))
+    fp.src = framePostUrl
+    const fst = new Image()
+    fst.onload = () => setFrames((s) => ({ ...s, story: fst }))
+    fst.src = frameStoryUrl
     const weights = ['500 100px Manrope', '600 100px Manrope', '700 100px Manrope', '800 100px Manrope']
     Promise.all(weights.map((w) => document.fonts.load(w)))
       .catch(() => {})
@@ -81,12 +90,13 @@ export default function App() {
       eventDate,
       portrait,
       patternImg,
+      frames,
     })
     if (fontsReady && patternImg && !generatedOnce.current && (portrait || name.trim())) {
       generatedOnce.current = true
       capture('badge_generated', { type, format, has_photo: !!portrait })
     }
-  }, [type, format, name, role, ally, eventName, eventDate, portrait, patternImg, fontsReady])
+  }, [type, format, name, role, ally, eventName, eventDate, portrait, patternImg, frames, fontsReady])
 
   // Ejecutar bg-removal cuando se activa el toggle (worker, no bloquea la UI).
   useEffect(() => {
@@ -147,7 +157,7 @@ export default function App() {
   }
 
   async function currentBlob() {
-    renderBadge(canvasRef.current, { type, format, name, role, ally, eventName, eventDate, portrait, patternImg })
+    renderBadge(canvasRef.current, { type, format, name, role, ally, eventName, eventDate, portrait, patternImg, frames })
     return canvasToBlob(canvasRef.current)
   }
 
