@@ -220,22 +220,20 @@ export default function App() {
         <header className="head">
           <h1>Genera tu credencial</h1>
           <p>Sube tu foto, arma tu credencial y comparte que estarás en la semana tech más grande del Perú.</p>
+          {type === 'attendee' && (
+            <p className="head-switch">
+              ¿Organizas un evento en PTW?{' '}
+              <a href={`/host${typeof window !== 'undefined' ? window.location.search : ''}`}>Crea tu credencial de host</a>
+            </p>
+          )}
         </header>
 
       <div className="grid">
         <div className="panel">
-          {TYPE_ORDER.includes(type) && (
-            <div className="field">
-              <label>Tipo de credencial</label>
-              <div className="seg">
-                {TYPE_ORDER.map((k) => (
-                  <button key={k} className={type === k ? 'active' : ''} onClick={() => setType(k)}>
-                    {TYPES[k].tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="field">
+            <label>Tu credencial</label>
+            <div className="typechip">{t.tab}</div>
+          </div>
 
           <div className="field">
             <label>Tu foto</label>
@@ -262,22 +260,15 @@ export default function App() {
             <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Founder · Prisma" maxLength={48} />
           </div>
 
-          {t.showAlly && (
-            <div className="field">
-              <label>Presenta (aliado)</label>
-              <input type="text" value={ally} onChange={(e) => setAlly(e.target.value)} placeholder="Nombre del aliado" maxLength={30} />
-            </div>
-          )}
-
           {t.showEvent && (
             <>
               <div className="field">
                 <label>Nombre del evento</label>
-                <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Nombre del evento" maxLength={40} />
+                <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Nombre de tu evento" maxLength={40} />
               </div>
               <div className="field">
-                <label>Fecha del evento</label>
-                <input type="text" value={eventDate} onChange={(e) => setEventDate(e.target.value)} placeholder="Lunes 13, Octubre" maxLength={28} />
+                <label>Fecha y hora</label>
+                <input type="text" value={eventDate} onChange={(e) => setEventDate(e.target.value)} placeholder="Mar 13 de oct · 7:00 pm" maxLength={28} />
               </div>
             </>
           )}

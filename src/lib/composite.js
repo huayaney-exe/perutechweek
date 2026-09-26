@@ -2,7 +2,12 @@ import { FONT, TYPES, FORMATS } from '../config/templates.js'
 
 // Diseño v3 "frame andino": el fondo (patrón + wordmark + fecha) viene quemado en
 // una imagen-frame por formato (src/assets/frame-*.jpg). Aquí sólo componemos, dentro
-// de la tarjeta blanca: foto + tab "Soy X" + nombre (rojo) + cargo·empresa.
+// de la tarjeta blanca: foto + tab "Soy X" + nombre (rojo) + datos.
+//
+// Layout de FLUJO: los elementos se apilan de arriba a abajo con alturas medidas, así
+// el tamaño de la foto se adapta al tipo:
+//  - tipos SIN evento (Asistente/Embajador/Aliado): foto grande + cargo·empresa.
+//  - tipos CON evento (Host/Speaker): foto algo menor + nombre del evento + fecha/hora.
 
 // Card del frame, en fracciones del lienzo (medidas de los assets finales).
 const CARD = {
@@ -10,16 +15,18 @@ const CARD = {
   story: { l: 0.1222, t: 0.2391, r: 0.8847, b: 0.7961 }, // frame-story 720×1280
 }
 
-// Bloque foto+texto, en fracciones de la card.
+// Bloque, en fracciones de la card.
 const SLOT = {
-  px: 0.109, py: 0.094, pw: 0.782, ph: 0.561, // foto
-  tagY: 0.689, tagFs: 0.038,                   // tab "Soy X"
-  nameY: 0.77, nameFs: 0.09,                    // nombre (rojo)
-  subY: 0.9, subFs: 0.03,                       // cargo · empresa
+  px: 0.072, pw: 0.856,        // foto/columna de texto: menos margen lateral → más ancho
+  photoTop: 0.058,             // foto más arriba (menos margen superior)
+  photoH: 0.60,                // alto de foto SIN evento
+  photoHEvent: 0.45,           // alto de foto CON evento (cargo + evento + fecha)
 }
 
 const RED = '#E4162A'
 const INK = '#111111'
+const MUT = '#4A4A4A'
+const SUB = '#616161' // apoyo (cargo, fecha): un escalón por debajo de la tinta
 const BG = '#0A0A0A'
 const PHOTO_BG = '#ECECEC'
 const PHOTO_ICON = '#B7B7B7'
@@ -53,7 +60,6 @@ function fitLeft(ctx, text, x, yTop, maxW, base, weight, color) {
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText(out, x, yTop)
-  return size
 }
 
 function drawTag(ctx, x, yTop, label, fs) {
@@ -70,6 +76,7 @@ function drawTag(ctx, x, yTop, label, fs) {
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText(label, x + padX, yTop + h / 2 + fs * 0.04)
+  return yTop + h
 }
 
 function drawPersonIcon(ctx, cx, cy, s) {
@@ -112,6 +119,7 @@ function draw(ctx, fmt, data) {
   const W = fmt.w
   const H = fmt.h
   const type = TYPES[data.type] || TYPES.attendee
+  const isEvent = !!type.showEvent
 
   // Fondo: frame nuevo escalado al lienzo; respaldo negro si aún no cargó.
   const frame = data.frames && data.frames[fmt.key]
@@ -130,25 +138,48 @@ function draw(ctx, fmt, data) {
   const left = cx + SLOT.px * cw
   const blockW = SLOT.pw * cw
 
-  drawPhoto(ctx, left, cy + SLOT.py * ch, blockW, SLOT.ph * ch, data.portrait)
+  // Foto (más grande sin evento; más chica con evento para dar lugar a 2 líneas).
+  const photoTop = cy + SLOT.photoTop * ch
+  const photoH = (isEvent ? SLOT.photoHEvent : SLOT.photoH) * ch
+  drawPhoto(ctx, left, photoTop, blockW, photoH, data.portrait)
+  const afterPhoto = photoTop + photoH
 
-  // Borra el placeholder negro quemado en el frame (bajo la foto) antes de escribir,
-  // recortando a la forma de la card para no pisar sus esquinas redondeadas.
+  // Borra el placeholder negro quemado en el frame (bajo la foto), recortando a la card.
   ctx.save()
   roundRect(ctx, cx + cw * 0.012, cy + ch * 0.012, cw * 0.976, ch * 0.976, cw * 0.05)
   ctx.clip()
   ctx.fillStyle = '#FFFFFF'
-  const clearY = cy + (SLOT.py + SLOT.ph) * ch + ch * 0.008
+  const clearY = afterPhoto
   ctx.fillRect(cx, clearY, cw, cy + ch - clearY)
   ctx.restore()
 
-  drawTag(ctx, left, cy + SLOT.tagY * ch, type.tab, SLOT.tagFs * ch)
+  // Bloque de texto en flujo.
+  let y = afterPhoto + ch * 0.03
+  y = drawTag(ctx, left, y, type.tab, 0.04 * ch) + ch * 0.024
 
+  // Grupo IDENTIDAD — nombre (hero) + cargo·empresa (apoyo, pegado al nombre).
+  const nameFs = 0.09 * ch
   const name = (data.name || '').trim() || 'Nombre Completo'
-  fitLeft(ctx, name, left, cy + SLOT.nameY * ch, blockW, SLOT.nameFs * ch, 800, RED)
+  fitLeft(ctx, name, left, y, blockW, nameFs, 800, RED)
+  y += nameFs + ch * 0.01
 
   const role = (data.role || '').trim()
-  if (role) fitLeft(ctx, role, left, cy + SLOT.subY * ch, blockW, SLOT.subFs * ch, 500, INK)
+  if (role) {
+    fitLeft(ctx, role, left, y, blockW, 0.029 * ch, 500, SUB)
+    y += 0.029 * ch
+  }
+
+  // Grupo EVENTO — separado por aire; el nombre del evento pesa más que el cargo.
+  if (isEvent) {
+    const evName = (data.eventName || '').trim()
+    const evDate = (data.eventDate || '').trim()
+    if (evName || evDate) y += ch * 0.036 // aire entre grupos
+    if (evName) {
+      fitLeft(ctx, evName, left, y, blockW, 0.037 * ch, 700, INK)
+      y += 0.037 * ch + ch * 0.006
+    }
+    if (evDate) fitLeft(ctx, evDate, left, y, blockW, 0.026 * ch, 500, SUB)
+  }
 }
 
 export function renderBadge(canvas, data) {

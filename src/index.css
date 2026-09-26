@@ -497,3 +497,43 @@ button.link:hover {
     transform: none;
   }
 }
+
+/* Chip de solo lectura: muestra el tipo de credencial (definido por el link). */
+.typechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-brd-strong);
+  color: var(--red-coral);
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: var(--hi);
+}
+.typechip::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red-bright);
+}
+
+/* Wayfinding a nivel de página: rutea a host a quien llegó por el link genérico. */
+.head-switch {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.head-switch a {
+  color: var(--red-coral);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 108, 118, 0.4);
+  padding-bottom: 1px;
+  transition: border-color 0.18s var(--ease);
+}
+.head-switch a:hover {
+  border-color: var(--red-coral);
+}
