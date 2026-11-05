@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendario GTM · Perú Tech Week 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0A0A0A; --bg-2:#111011; --surface:#151315; --surface-2:#1b171a;
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+    --ink:#F6F5F6; --muted:#9b9799; --faint:#6c686a;
+    --red:#E4162A; --maroon:#6E1315; --red-soft:rgba(228,22,42,.14);
+    --done:#3fbf74; --done-soft:rgba(63,191,116,.14);
+    --now:#E4162A; --soon:#c9a24b; --soon-soft:rgba(201,162,75,.12);
+    --font:"Manrope",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1100px 520px at 82% -8%, rgba(228,22,42,.16), transparent 60%),
+      radial-gradient(820px 420px at 6% 4%, rgba(110,19,21,.22), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--font); line-height:1.5;
+    -webkit-font-smoothing:antialiased; padding:40px 24px 72px;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+
+  /* Header */
+  .kicker{display:inline-flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
+  h1{font-size:clamp(30px,4.4vw,46px);font-weight:800;letter-spacing:-.02em;margin:0 0 6px;line-height:1.04}
+  h1 .yr{color:var(--red)}
+  .sub{color:var(--muted);font-size:15px;max-width:640px}
+  .sub b{color:var(--ink);font-weight:700}
+
+  /* Meta strip */
+  .metas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 8px}
+  .meta{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px}
+  .meta .lab{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:9px}
+  .meta .val{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .meta .val small{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .meta .foot{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);margin-top:10px;overflow:hidden}
+  .bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--maroon),var(--red))}
+
+  /* Section titles */
+  .sec{display:flex;align-items:baseline;gap:12px;margin:38px 0 16px}
+  .sec h2{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:0}
+  .sec .hint{font-size:12.5px;color:var(--muted)}
+  .sec .rule{flex:1;height:1px;background:var(--line)}
+
+  /* Timeline */
+  .tl{position:relative;padding-left:34px}
+  .tl::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .ph{position:relative;margin-bottom:14px}
+  .ph::before{content:"";position:absolute;left:-33px;top:20px;width:16px;height:16px;border-radius:50%;background:var(--bg-2);border:2px solid var(--line-strong);box-shadow:0 0 0 4px var(--bg)}
+  .ph.done::before{background:var(--done);border-color:var(--done)}
+  .ph.now::before{background:var(--now);border-color:var(--now);box-shadow:0 0 0 4px var(--bg),0 0 0 9px var(--red-soft);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 4px var(--bg),0 0 0 8px var(--red-soft)}50%{box-shadow:0 0 0 4px var(--bg),0 0 0 13px rgba(228,22,42,.05)}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;transition:border-color .2s}
+  .ph.now .card{background:linear-gradient(180deg,rgba(228,22,42,.07),rgba(228,22,42,0) 60%),var(--surface-2);border-color:rgba(228,22,42,.42);box-shadow:0 0 0 1px rgba(228,22,42,.12),0 18px 40px -22px rgba(228,22,42,.5)}
+  .ph.done .card{opacity:.92}
+
+  .ch{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-bottom:4px}
+  .code{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--faint)}
+  .ph.now .code{color:var(--red)}
+  .ph .name{font-size:17.5px;font-weight:800;letter-spacing:-.01em}
+  .dates{font-size:12.5px;font-weight:600;color:var(--muted);margin-left:auto}
+  .tag{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:99px;border:1px solid transparent}
+  .tag.done{color:var(--done);background:var(--done-soft);border-color:rgba(63,191,116,.3)}
+  .tag.now{color:#fff;background:var(--red);box-shadow:0 4px 14px -4px rgba(228,22,42,.7)}
+  .tag.soon{color:var(--soon);background:var(--soon-soft);border-color:rgba(201,162,75,.28)}
+
+  .focus{font-size:13.5px;color:var(--muted);margin:8px 0 12px}
+  .focus b{color:var(--ink);font-weight:700}
+
+  ul.tasks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 22px}
+  ul.tasks li{position:relative;padding-left:23px;font-size:13px;color:#d9d6d8}
+  ul.tasks li::before{content:"";position:absolute;left:0;top:6px;width:13px;height:13px;border-radius:4px;border:1.5px solid var(--line-strong)}
+  ul.tasks li.ok::before{background:var(--done);border-color:var(--done)}
+  ul.tasks li.ok::after{content:"";position:absolute;left:4px;top:8px;width:4px;height:7px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg)}
+  ul.tasks li.ok{color:var(--muted)}
+
+  .truth{margin-top:13px;padding:10px 13px;border-left:3px solid var(--red);background:var(--red-soft);border-radius:0 10px 10px 0;font-size:12.5px}
+  .truth b{color:var(--ink)}
+  .crit{margin-top:11px;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#f0c14b;background:var(--soon-soft);border:1px solid rgba(201,162,75,.3);padding:5px 11px;border-radius:99px}
+
+  /* Comms track */
+  .comms{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .cm{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .cm.on{border-color:rgba(228,22,42,.4);background:linear-gradient(180deg,rgba(228,22,42,.06),transparent),var(--surface-2)}
+  .cm .p{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+  .cm.on .p{color:var(--red)}
+  .cm .d{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+  .cm .m{font-size:12.5px;color:#d9d6d8}
+
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 18px;font-size:11.5px;color:var(--faint)}
+  footer b{color:var(--muted)}
+  .leg{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 0}
+  .leg span{display:inline-flex;align-items:center;gap:6px}
+  .leg i{width:9px;height:9px;border-radius:50%}
+
+  @media(max-width:760px){
+    .metas{grid-template-columns:repeat(2,1fr)}
+    ul.tasks{grid-template-columns:1fr}
+    .comms{grid-template-columns:1fr 1fr}
+    .dates{margin-left:0;width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker"><span class="dot"></span>Go-to-market · Ruta de lanzamiento</span>
+    <h1>Calendario GTM — Perú Tech Week <span class="yr">2026</span></h1>
+    <p class="sub">Qué haremos y qué estamos haciendo, semana a semana, hasta el evento.
+      <b>Hoy: 23 sep 2026.</b> Evento: <b>12–18 oct · Lima</b>. Estamos en la fase <b>H1 · Reclutamiento → compromisos</b>.</p>
+
+    <div class="metas">
+      <div class="meta">
+        <div class="lab">Cuenta regresiva</div>
+        <div class="val">19<small> días al evento</small></div>
+        <div class="foot">10 días al corte de agenda (3 oct)</div>
+      </div>
+      <div class="meta">
+        <div class="lab">Agenda (M1)</div>
+        <div class="val">12<small> / 35 eventos</small></div>
+        <div class="bar"><i style="width:34%"></i></div>
+        <div class="foot">Meta: ~5 eventos/día × 7 días</div>
+      </div>
+      <div class="meta">
+        <div class="lab">Meta norte (M3)</div>
+        <div class="val">2,500<small> únicos</small></div>
+        <div class="foot">2,000 comprometido · 2,500 stretch</div>
+      </div>
+      <div class="meta">
+        <div class="lab">Motor humano</div>
+        <div class="val">40<small> embajadores</small></div>
+        <div class="foot">+ 25 orgs host · 6–8 sponsors · 15 vol.</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sec"><h2>Fases del sprint</h2><span class="hint">oferta primero, demanda después</span><span class="rule"></span></div>
+
+  <div class="tl">
+
+    <!-- H0 -->
+    <div class="ph done">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H0</span>
+          <span class="name">Desbloqueo & fundaciones</span>
+          <span class="dates">16–21 sep</span>
+          <span class="tag done">Hecho</span>
+        </div>
+        <div class="focus"><b>Foco:</b> tomar decisiones que desbloquean todo y montar la infraestructura para delegar.</div>
+        <ul class="tasks">
+          <li class="ok">Cola de decisiones D1–D10 respondida</li>
+          <li class="ok">Ops Lead asignado + accesos owned</li>
+          <li class="ok">Mapa de contactos calientes lleno</li>
+          <li class="ok">Tableros vivos (partners, embajadores, calendario)</li>
+          <li class="ok">Convocatoria de embajadores publicada</li>
+          <li class="ok">Outreach a hosts P0 + 2 sponsors ancla iniciado</li>
+        </ul>
+        <div class="truth"><b>La única verdad para avanzar:</b> existe un Ops Lead con accesos — sin esto, Luis es el cuello de botella.</div>
+      </div>
+    </div>
+
+    <!-- H1 · NOW -->
+    <div class="ph now">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H1 · AHORA</span>
+          <span class="name">Reclutamiento paralelo → compromisos</span>
+          <span class="dates">22–28 sep</span>
+          <span class="tag now">En curso</span>
+        </div>
+        <div class="focus"><b>Foco:</b> convertir los dos pipelines (oferta y demanda) en compromisos reales.</div>
+        <ul class="tasks">
+          <li>Hosts P0 confirmados y publicados en Luma (~22 eventos)</li>
+          <li>1er sponsor ancla cerrado</li>
+          <li>40 embajadores seleccionados + onboarded (de ~100)</li>
+          <li>Comunidad WhatsApp creada y sembrada; UTMs operando</li>
+          <li class="ok">Credencial MVP en vivo (generador compartible)</li>
+          <li>Cascada a hosts P1 iniciada</li>
+        </ul>
+        <div class="truth"><b>La única verdad para avanzar:</b> 40 embajadores produciendo + credencial compartible viva — las dos fuentes de reach sin budget, encendidas.</div>
+      </div>
+    </div>
+
+    <!-- H2 -->
+    <div class="ph">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H2</span>
+          <span class="name">Cierre de agenda + motor de demanda a full</span>
+          <span class="dates">29 sep – 5 oct</span>
+          <span class="tag soon">Próximo</span>
+        </div>
+        <div class="focus"><b>Foco:</b> agenda completa → encender la demanda en todos los canales.</div>
+        <ul class="tasks">
+          <li>Meta ~35 eventos publicados</li>
+          <li>Evento de cierre / demo day confirmado</li>
+          <li>Reveal de agenda completa + spotlights diarios</li>
+          <li>Embajadores a máxima cuota</li>
+          <li>Envíos en newsletters aliados + push de prensa</li>
+          <li>Cross-promo de hosts activa</li>
+        </ul>
+        <div class="crit">⚠ CORTE DE AGENDA: 3 oct — después no hay tiempo de difusión para eventos nuevos</div>
+        <div class="truth"><b>La única verdad para avanzar:</b> agenda cerrada en el corte del 3 oct.</div>
+      </div>
+    </div>
+
+    <!-- H3 -->
+    <div class="ph">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H3</span>
+          <span class="name">Sprint final de inscripciones + logística</span>
+          <span class="dates">6–11 oct</span>
+          <span class="tag soon">Próximo</span>
+        </div>
+        <div class="focus"><b>Foco:</b> llenar salas y dejar la operación lista. Todo es demanda + logística.</div>
+        <ul class="tasks">
+          <li>Inscripciones ≥ meta ajustada por no-show</li>
+          <li>Countdown diario + urgencia por segmento</li>
+          <li>Broadcasts en WhatsApp Community</li>
+          <li>Voluntarios confirmados + briefs + turnos</li>
+          <li>Confirmación 48h de asistentes clave</li>
+          <li>Walkthrough con hosts de eventos grandes</li>
+        </ul>
+        <div class="truth"><b>La única verdad para avanzar:</b> cobertura de voluntarios por evento asignada — sin manos, la semana no se ejecuta.</div>
+      </div>
+    </div>
+
+    <!-- H4 -->
+    <div class="ph">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H4</span>
+          <span class="name">Semana del evento</span>
+          <span class="dates">12–18 oct</span>
+          <span class="tag soon">Evento</span>
+        </div>
+        <div class="focus"><b>Foco:</b> ejecutar, sostener demanda día a día y capturar data.</div>
+        <ul class="tasks">
+          <li>Voluntarios operando cada evento (check-in, contenido)</li>
+          <li>Broadcast diario "hoy en PTW" + FOMO</li>
+          <li>Contenido en vivo alimenta días siguientes</li>
+          <li>Evento de cierre como clímax</li>
+          <li>Leads y feedback capturados para 2027</li>
+        </ul>
+        <div class="truth"><b>La única verdad:</b> operación de check-in funcionando el día 1 — marca la primera impresión de toda la semana.</div>
+      </div>
+    </div>
+
+    <!-- H5 -->
+    <div class="ph">
+      <div class="card">
+        <div class="ch">
+          <span class="code">H5</span>
+          <span class="name">Post-evento</span>
+          <span class="dates">19 oct +</span>
+          <span class="tag soon">Cierre</span>
+        </div>
+        <div class="focus"><b>Foco:</b> cerrar el ciclo, medir y dejar base para 2027.</div>
+        <ul class="tasks">
+          <li>Recap con métricas reales + fotos</li>
+          <li>Agradecimiento con datos a embajadores/voluntarios/sponsors</li>
+          <li>Retro del equipo</li>
+          <li>Base de datos consolidada para reconfirmación 2027</li>
+        </ul>
+        <div class="truth"><b>La única verdad para cerrar:</b> resultados vs. meta norte medidos y documentados (insumo del pitch 2027).</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec"><h2>Track de comunicación · canales owned</h2><span class="hint">un solo destino: luma.com/Perutechweek2026</span><span class="rule"></span></div>
+  <div class="comms">
+    <div class="cm on">
+      <div class="p">Teaser</div>
+      <div class="d">15–28 sep</div>
+      <div class="m">"Se viene PTW 2026. Guarda la fecha. Suscríbete al calendario."</div>
+    </div>
+    <div class="cm">
+      <div class="p">Reveal</div>
+      <div class="d">29 sep – 5 oct</div>
+      <div class="m">"Agenda completa: 35 eventos. Elige los tuyos" + spotlights diarios.</div>
+    </div>
+    <div class="cm">
+      <div class="p">Empuje</div>
+      <div class="d">6–11 oct</div>
+      <div class="m">Countdown, urgencia, "cupos limitados", guías por segmento.</div>
+    </div>
+    <div class="cm">
+      <div class="p">Durante</div>
+      <div class="d">12–18 oct</div>
+      <div class="m">Broadcast diario "hoy en PTW", cobertura en vivo, FOMO en stories.</div>
+    </div>
+    <div class="cm">
+      <div class="p">Post</div>
+      <div class="d">19 oct +</div>
+      <div class="m">Recap, fotos, "nos vemos en 2027", captura de leads.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="leg">
+      <span><i style="background:var(--done)"></i> Hecho</span>
+      <span><i style="background:var(--now)"></i> En curso (hoy)</span>
+      <span><i style="background:var(--line-strong)"></i> Próximo</span>
+    </div>
+    <div style="flex:1"></div>
+    <div>Fuente: <b>docs/05-plan-ejecucion.md</b> · <b>planning/milestones.md</b> · <b>docs/02-gtm-attendees.md</b> · <b>docs/00-contexto-y-metas.md</b></div>
+  </footer>
+
+</div>
+</body>
+</html>

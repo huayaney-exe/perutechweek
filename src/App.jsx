@@ -309,7 +309,7 @@ export default function App() {
           <div className="actions">
             <div className="msg">
               <div className="msg-head">
-                <label htmlFor="msg">Mensaje para compartir</label>
+                <label htmlFor="msg">Copy sugerido para compartir</label>
                 <button className="link" onClick={onCopy}>Copiar</button>
               </div>
               <textarea
